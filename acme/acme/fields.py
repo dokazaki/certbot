@@ -5,6 +5,9 @@ import pyrfc3339
 
 from acme import jose
 
+MYPY = False
+if MYPY:
+    from typing import Any  # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +16,7 @@ class Fixed(jose.Field):
     """Fixed field."""
 
     def __init__(self, json_name, value):
+        # type: (str, Any) -> None
         self.value = value
         super(Fixed, self).__init__(
             json_name=json_name, default=value, omitempty=False)

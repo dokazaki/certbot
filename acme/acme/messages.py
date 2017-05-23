@@ -7,6 +7,10 @@ from acme import fields
 from acme import jose
 from acme import util
 
+MYPY = False
+if MYPY:
+    from typing import Any, Callable  # pylint: disable=unused-import
+
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
 
@@ -35,6 +39,7 @@ ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
 
 
 def is_acme_error(err):
+    # type: (Exception) -> bool
     """Check if argument is an ACME error."""
     return (ERROR_PREFIX in str(err)) or (OLD_ERROR_PREFIX in str(err))
 
@@ -55,6 +60,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
 
     @classmethod
     def with_code(cls, code, **kwargs):
+        # type: (str, **Any) -> object
         """Create an Error instance with an ACME Error code.
 
         :unicode code: An ACME error code, like 'dnssec'.

@@ -18,6 +18,10 @@ from acme.jose import errors
 from acme.jose import interfaces
 from acme.jose import util
 
+MYPY = False
+if MYPY:
+    from typing import Any, Callable, Union  # pylint: disable=unused-import
+    from functools import partial  # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 
@@ -50,16 +54,18 @@ class Field(object):
 
     def __init__(self, json_name, default=None, omitempty=False,
                  decoder=None, encoder=None):
+        # type: (str, Any, bool, Union[Callable[[Any], Any], partial], Callable[[Any], Any]) -> None
         # pylint: disable=too-many-arguments
         self.json_name = json_name
         self.default = default
         self.omitempty = omitempty
 
-        self.fdec = self.default_decoder if decoder is None else decoder
-        self.fenc = self.default_encoder if encoder is None else encoder
+        self.fdec = self.default_decoder if decoder is None else decoder  # Type: Union[Callable[[Any], Any], partial]  # pylint: disable=line-too-long
+        self.fenc = self.default_encoder if encoder is None else encoder  # Type: Callable[[Any], Any]  # pylint: disable=line-too-long
 
     @classmethod
     def _empty(cls, value):
+        # type: (Any) -> bool
         """Is the provided value considered "empty" for this field?
 
         This is useful for subclasses that might want to override the
@@ -69,10 +75,12 @@ class Field(object):
         return not isinstance(value, bool) and not value
 
     def omit(self, value):
+        # type: (Any) -> bool
         """Omit the value in output?"""
         return self._empty(value) and self.omitempty
 
     def _update_params(self, **kwargs):
+        # type: (**Any) -> Field
         current = dict(json_name=self.json_name, default=self.default,
                        omitempty=self.omitempty,
                        decoder=self.fdec, encoder=self.fenc)
@@ -80,23 +88,28 @@ class Field(object):
         return type(self)(**current)  # pylint: disable=star-args
 
     def decoder(self, fdec):
+        # type: (Union[Callable[[Any], Any], partial]) -> Field
         """Descriptor to change the decoder on JSON object field."""
         return self._update_params(decoder=fdec)
 
     def encoder(self, fenc):
+        # type: (Callable[[Any], Any]) -> Field
         """Descriptor to change the encoder on JSON object field."""
         return self._update_params(encoder=fenc)
 
     def decode(self, value):
+        # type: (Any) -> Any
         """Decode a value, optionally with context JSON object."""
         return self.fdec(value)
 
     def encode(self, value):
+        # type: (Any) -> Any
         """Encode a value, optionally with context JSON object."""
-        return self.fenc(value)
+        return self.fenc(value)  # type: ignore
 
     @classmethod
     def default_decoder(cls, value):
+        # type: (Any) -> Any
         """Default decoder.
 
         Recursively deserialize into immutable types (
@@ -116,6 +129,7 @@ class Field(object):
 
     @classmethod
     def default_encoder(cls, value):
+        # type: (Any) -> Any
         """Default (passthrough) encoder."""
         # field.to_partial_json() is no good as encoder has to do partial
         # serialization only
@@ -294,6 +308,7 @@ class JSONObjectWithFields(util.ImmutableMap, interfaces.JSONDeSerializable):
 
 
 def encode_b64jose(data):
+    # type: (Any) -> Any
     """Encode JOSE Base-64 field.
 
     :param bytes data:
@@ -305,6 +320,7 @@ def encode_b64jose(data):
 
 
 def decode_b64jose(data, size=None, minimum=False):
+    # type: (Any, int, bool) -> Any
     """Decode JOSE Base-64 field.
 
     :param unicode data:
@@ -318,7 +334,7 @@ def decode_b64jose(data, size=None, minimum=False):
     error_cls = TypeError if six.PY2 else binascii.Error
     try:
         decoded = b64.b64decode(data.encode())
-    except error_cls as error:
+    except error_cls as error:  # type: ignore
         raise errors.DeserializationError(error)
 
     if size is not None and ((not minimum and len(decoded) != size) or
@@ -330,6 +346,7 @@ def decode_b64jose(data, size=None, minimum=False):
 
 
 def encode_hex16(value):
+    # type: (Any) -> Any
     """Hexlify.
 
     :param bytes value:
@@ -340,6 +357,7 @@ def encode_hex16(value):
 
 
 def decode_hex16(value, size=None, minimum=False):
+    # type: (Any, int, bool) -> Any
     """Decode hexlified field.
 
     :param unicode value:
@@ -357,22 +375,24 @@ def decode_hex16(value, size=None, minimum=False):
     error_cls = TypeError if six.PY2 else binascii.Error
     try:
         return binascii.unhexlify(value)
-    except error_cls as error:
+    except error_cls as error:  # type: ignore
         raise errors.DeserializationError(error)
 
 
 def encode_cert(cert):
+    # type: (Any) -> six.text_type
     """Encode certificate as JOSE Base-64 DER.
 
     :type cert: `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
     :rtype: unicode
 
     """
-    return encode_b64jose(OpenSSL.crypto.dump_certificate(
-        OpenSSL.crypto.FILETYPE_ASN1, cert.wrapped))
+    return encode_b64jose(OpenSSL.crypto.dump_certificate(  # type: ignore
+        OpenSSL.crypto.FILETYPE_ASN1, cert.wrapped))  # type: ignore
 
 
 def decode_cert(b64der):
+    # type: (six.text_type) -> Any
     """Decode JOSE Base-64 DER-encoded certificate.
 
     :param unicode b64der:
@@ -380,9 +400,9 @@ def decode_cert(b64der):
 
     """
     try:
-        return util.ComparableX509(OpenSSL.crypto.load_certificate(
-            OpenSSL.crypto.FILETYPE_ASN1, decode_b64jose(b64der)))
-    except OpenSSL.crypto.Error as error:
+        return util.ComparableX509(OpenSSL.crypto.load_certificate(  # type: ignore
+            OpenSSL.crypto.FILETYPE_ASN1, decode_b64jose(b64der)))  # type: ignore
+    except OpenSSL.crypto.Error as error:  # type: ignore
         raise errors.DeserializationError(error)
 
 
